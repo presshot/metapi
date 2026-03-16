@@ -20,8 +20,18 @@ export function formatUtcSqlDateTime(value: Date): string {
   return `${value.getUTCFullYear()}-${pad2(value.getUTCMonth() + 1)}-${pad2(value.getUTCDate())} ${pad2(value.getUTCHours())}:${pad2(value.getUTCMinutes())}:${pad2(value.getUTCSeconds())}`;
 }
 
-export function parseStoredUtcDateTime(raw: string | null | undefined): Date | null {
+export function parseStoredUtcDateTime(raw: string | number | Date | null | undefined): Date | null {
   if (!raw) return null;
+  if (raw instanceof Date) {
+    if (Number.isNaN(raw.getTime())) return null;
+    return raw;
+  }
+  if (typeof raw === 'number') {
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+  }
+  if (typeof raw !== 'string') return null;
   const text = raw.trim();
   if (!text) return null;
 
