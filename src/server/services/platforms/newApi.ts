@@ -634,6 +634,15 @@ export class NewApiAdapter extends BasePlatformAdapter {
       const proxiedRequestOptions = await withSiteProxyRequestInit(url, requestOptions);
       const res = await fetch(url, proxiedRequestOptions);
       const text = await res.text();
+      const contentType = res.headers.get('content-type') || '';
+      const sample = text.length > 200 ? `${text.slice(0, 200)}...` : text;
+      console.log('[new-api fetch]', {
+        url,
+        status: res.status,
+        contentType,
+        hasCookie: !!cookieHeader,
+        sample,
+      });
       const getSetCookie = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie;
       if (typeof getSetCookie === 'function') {
         cookieHeader = this.mergeSetCookiePairs(cookieHeader, getSetCookie.call(res.headers) || []);
