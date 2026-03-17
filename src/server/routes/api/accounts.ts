@@ -559,6 +559,15 @@ export async function accountsRoutes(app: FastifyInstance) {
     const site = await db.select().from(schema.sites).where(eq(schema.sites.id, siteId)).get();
     if (!site) return { success: false, message: 'site not found' };
 
+    console.log('[verify-token] request', {
+      siteId,
+      siteUrl: site.url,
+      platform: site.platform,
+      credentialMode,
+      hasAccessToken: !!accessToken,
+      platformUserId,
+    });
+
     if (!accessToken) {
       return { success: false, message: 'Token 不能为空' };
     }
@@ -684,11 +693,13 @@ export async function accountsRoutes(app: FastifyInstance) {
         );
         const availableModels = Array.isArray(models) ? models.filter((item) => typeof item === 'string' && item.trim().length > 0) : [];
         if (availableModels.length === 0) {
+          console.log('[verify-token] apikey no models');
           return {
             success: false,
             message: 'API Key 验证失败：未获取到可用模型',
           };
         }
+        console.log('[verify-token] apikey ok', { modelCount: availableModels.length });
         return {
           success: true,
           tokenType: 'apikey',
@@ -700,6 +711,7 @@ export async function accountsRoutes(app: FastifyInstance) {
           const failure = buildVerificationFailureResponse(await diagnoseVerificationFailure());
           if (failure) return failure;
         }
+        console.log('[verify-token] apikey error', { message: err?.message });
         return {
           success: false,
           message: err?.message || 'API Key 验证失败',
@@ -719,11 +731,19 @@ export async function accountsRoutes(app: FastifyInstance) {
         const failure = buildVerificationFailureResponse(await diagnoseVerificationFailure());
         if (failure) return failure;
       }
+      console.log('[verify-token] session error', { message: err?.message });
       return {
         success: false,
         message: appendSessionTokenRebindHint(err?.message || 'Token 验证失败'),
       };
     }
+
+    console.log('[verify-token] session result', {
+      tokenType: result?.tokenType,
+      hasUserInfo: !!result?.userInfo,
+      hasBalance: !!result?.balance,
+      hasApiToken: !!result?.apiToken,
+    });
 
     if (result.tokenType === 'session') {
       return {
@@ -1516,4 +1536,3 @@ export async function accountsRoutes(app: FastifyInstance) {
     }
   });
 }
-
